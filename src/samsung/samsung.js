@@ -37,7 +37,28 @@ stdin.on("end", function () {
         !textIsCategory(item.text) &&
         !["DATA", "ESTABELECIMENTO", "VALOR"].includes(item.text)
     )
-    .map((item) => item.text);
+    .map((item) => item.text)
+    .flatMap((item) => item.split("\r"));
+
+  const lastInvoiceAmountIndex = data.findIndex((text) =>
+    text.startsWith("Total da fatura anterior")
+  );
+  const donePaymentsAmountIndex = data.findIndex((text) =>
+    text.startsWith("Pagamentos realizados")
+  );
+
+  const lastInvoiceAmount = formatAmount(
+    data[lastInvoiceAmountIndex].includes("R$ ")
+      ? data[lastInvoiceAmountIndex]
+      : data[lastInvoiceAmountIndex + 1]
+  );
+  const donePaymentsAmount = formatAmount(
+    data[donePaymentsAmountIndex].includes("R$ ")
+      ? data[donePaymentsAmountIndex]
+      : data[donePaymentsAmountIndex + 1]
+  );
+
+  const debitCreditDiff = round(lastInvoiceAmount + donePaymentsAmount);
 
   const startIndex =
     data.findIndex((text) => text === "Lancamentos do mes") + 1;
@@ -101,10 +122,15 @@ stdin.on("end", function () {
   );
   const difference = round(itemsSum - expectedItemsSum);
 
-  if (difference) {
-    console.error(
-      `${invoiceDate} - expected ${expectedItemsSum} sum, got ${itemsSum}. Difference: ${difference}}`
-    );
+  if (difference && Math.abs(difference) !== Math.abs(debitCreditDiff)) {
+    console.error(`Error extracting ${invoiceDate}`, {
+      expectedItemsSum,
+      itemsSum,
+      difference,
+      debitCreditDiff,
+      lastInvoiceAmount,
+      donePaymentsAmount,
+    });
   }
   console.log(JSON.stringify(final, null, 2));
 });

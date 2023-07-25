@@ -5,7 +5,7 @@ export function formatAmount(amount) {
     return;
   }
 
-  return parseInt(amount.replace(/[^\d.-]/g, "")) / 100;
+  return parseInt(amount.replace(/[^\d-]/g, "")) / 100;
 }
 
 export function formatDescription(description) {
