@@ -1,4 +1,4 @@
-export function textIsCategory(text) {
+export function textIsCategory(text?: string) {
   return [
     "alimentacao",
     "compras",
@@ -14,18 +14,18 @@ export function textIsCategory(text) {
   ].includes((text || "").toLowerCase());
 }
 
-export function isAmount(text) {
+export function isAmount(text?: string) {
   return (text || "").includes("R$ ");
 }
 
-export function isDate(text) {
+export function isDate(text?: string) {
   return (text || "").includes(", 20");
 }
 
-export function isInstalments(text) {
+export function isInstalments(text?: string) {
   return (text || "").includes("parcela ");
 }
 
-export function isDescription(text) {
+export function isDescription(text?: string) {
   return !isAmount(text) && !isDate(text) && !isInstalments(text);
 }

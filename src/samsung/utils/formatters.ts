@@ -1,6 +1,7 @@
+import { ItemBase } from "./model.js";
 import { isAmount, isDate, isDescription, isInstalments } from "./validator.js";
 
-export function formatAmount(amount) {
+export function formatAmount(amount?: string) {
   if (!amount) {
     return;
   }
@@ -8,11 +9,11 @@ export function formatAmount(amount) {
   return parseInt(amount.replace(/[^\d-]/g, "")) / 100;
 }
 
-export function formatDescription(description) {
+export function formatDescription(description?: string) {
   return description;
 }
 
-export function formatInstalments(instalments) {
+export function formatInstalments(instalments?: string) {
   if (!instalments) {
     return;
   }
@@ -20,7 +21,7 @@ export function formatInstalments(instalments) {
   return instalments.replace("parcela ", "").replace(" de ", "/");
 }
 
-export function formatDate(date) {
+export function formatDate(date?: string) {
   if (!date) {
     return;
   }
@@ -46,13 +47,13 @@ export function formatDate(date) {
   ];
 
   return new Date(
-    sanitized[2],
+    parseInt(sanitized[2], 10),
     months.findIndex((item) => item === sanitized[1]),
-    sanitized[0]
+    parseInt(sanitized[0], 10)
   );
 }
 
-export function normalizeItem(item) {
+export function normalizeItem(item: ItemBase) {
   return {
     text: (item.text || "")
       .normalize("NFD")
@@ -62,16 +63,16 @@ export function normalizeItem(item) {
   };
 }
 
-export function convertInputDataToJson(data) {
-  return JSON.parse(data, null, 2).flatMap((item) => item.data);
+export function convertInputDataToJson(data?: string) {
+  return JSON.parse(data || "").flatMap((item: any) => item.data);
 }
 
-export function round(num, precision = 2) {
+export function round(num: number, precision: number = 2) {
   const base = Math.pow(10, precision);
   return Math.round(num * base) / base;
 }
 
-export function getTextType(text) {
+export function getTextType(text?: string) {
   if (isAmount(text)) {
     return "amount";
   }

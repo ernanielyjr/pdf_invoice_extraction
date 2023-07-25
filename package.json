@@ -1,14 +1,19 @@
 {
   "name": "pdf_invoice_extraction",
   "version": "1.0.0",
-  "type": "module",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
+  "description": "Extracts tables from pdf invoice and converts to json",
+  "author": "Ernani Ely Junior",
   "license": "ISC",
-  "dependencies": {}
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [
+    "invoice pdf to json",
+    "samsung itaucard invoice",
+    "extract pdf tables"
+  ],
+  "dependencies": {
+    "@types/node": "^20.4.5",
+    "typescript": "^5.1.6"
+  }
 }

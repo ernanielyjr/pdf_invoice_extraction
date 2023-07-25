@@ -1,3 +1,6 @@
+import { exec as execOriginal } from "child_process";
+import path from "path";
+import { promisify } from "util";
 import {
   convertInputDataToJson,
   formatAmount,
@@ -7,8 +10,11 @@ import {
   getTextType,
   normalizeItem,
   round,
-} from "./utils/formatters.js";
-import { textIsCategory } from "./utils/validator.js";
+} from "./utils/formatters";
+import { FormattedItem, PreFormattedItem } from "./utils/model";
+import { textIsCategory } from "./utils/validator";
+
+const exec = promisify(execOriginal);
 
 const DEGUB = true;
 
@@ -19,57 +25,67 @@ const args = process.argv.slice(2);
 const expectedItemsSum = parseFloat(args[0]);
 const invoiceDate = args[1];
 
-stdin.setEncoding("utf-8");
+(async () => {
+  const { stdout: result } = await exec(
+    [
+      "java",
+      "-jar",
+      path.join(__dirname, "../bin/tabula.jar"),
+      `./data/${invoiceDate}-samsung.pdf`,
+      "--pages",
+      "all",
+      "--format",
+      "JSON",
+      "--silent",
+    ].join(" ")
+  );
 
-let result = "";
-
-stdin.on("data", (data) => {
-  result += data.trim();
-});
-
-stdin.on("end", () => {
   const data = convertInputDataToJson(result)
-    .flatMap((item) => item)
+    .flatMap((item: any[]) => item)
     .map(normalizeItem)
     .filter(
-      (item) =>
+      (item: any) =>
         item.text !== "" &&
         !textIsCategory(item.text) &&
         !["DATA", "ESTABELECIMENTO", "VALOR"].includes(item.text)
     )
-    .map((item) => item.text)
-    .flatMap((item) => item.split(/[\r\n]+/));
+    .map((item: any) => item.text)
+    .flatMap((text: string) => text.split(/[\r\n]+/));
 
-  const lastInvoiceAmountIndex = data.findIndex((text) =>
+  const lastInvoiceAmountIndex = data.findIndex((text: string) =>
     text.startsWith("Total da fatura anterior")
   );
-  const donePaymentsAmountIndex = data.findIndex((text) =>
+  const donePaymentsAmountIndex = data.findIndex((text: string) =>
     text.startsWith("Pagamentos realizados")
   );
 
-  const lastInvoiceAmount = formatAmount(
-    data[lastInvoiceAmountIndex].includes("R$ ")
-      ? data[lastInvoiceAmountIndex]
-      : data[lastInvoiceAmountIndex + 1]
-  );
-  const donePaymentsAmount = formatAmount(
-    data[donePaymentsAmountIndex].includes("R$ ")
-      ? data[donePaymentsAmountIndex]
-      : data[donePaymentsAmountIndex + 1]
-  );
+  const lastInvoiceAmount =
+    formatAmount(
+      data[lastInvoiceAmountIndex].includes("R$ ")
+        ? data[lastInvoiceAmountIndex]
+        : data[lastInvoiceAmountIndex + 1]
+    ) || 0;
+  const donePaymentsAmount =
+    formatAmount(
+      data[donePaymentsAmountIndex].includes("R$ ")
+        ? data[donePaymentsAmountIndex]
+        : data[donePaymentsAmountIndex + 1]
+    ) || 0;
 
   const debitCreditDiff = round(lastInvoiceAmount + donePaymentsAmount);
 
   const startIndex =
-    data.findIndex((text) => text === "Lancamentos do mes") + 1;
-  const endIndex = data.findIndex((text) => text === "Importante saber");
+    data.findIndex((text: string) => text === "Lancamentos do mes") + 1;
+  const endIndex = data.findIndex(
+    (text: string) => text === "Importante saber"
+  );
 
   const sliced = data.slice(startIndex, endIndex);
 
   const merged = [];
 
   for (let i = 0; i < sliced.length; i++) {
-    const newItem = {};
+    const newItem: PreFormattedItem = {};
 
     const text0 = sliced[i + 0];
     const text1 = sliced[i + 1];
@@ -81,22 +97,22 @@ stdin.on("end", () => {
     const type2 = getTextType(text2);
     const type3 = getTextType(text3);
 
-    if (!newItem.hasOwnProperty(type0)) {
+    if (type0 && !newItem.hasOwnProperty(type0)) {
       newItem[type0] = text0;
       i++;
     }
 
-    if (!newItem.hasOwnProperty(type1)) {
+    if (type1 && !newItem.hasOwnProperty(type1)) {
       newItem[type1] = text1;
       i++;
     }
 
-    if (!newItem.hasOwnProperty(type2)) {
+    if (type2 && !newItem.hasOwnProperty(type2)) {
       newItem[type2] = text2;
       i++;
     }
 
-    if (!newItem.hasOwnProperty(type3)) {
+    if (type3 && !newItem.hasOwnProperty(type3)) {
       newItem[type3] = text3;
       i++;
     }
@@ -110,7 +126,7 @@ stdin.on("end", () => {
     merged.push(newItem);
   }
 
-  const final = merged.map((item) => ({
+  const final: FormattedItem[] = merged.map((item) => ({
     date: formatDate(item.date),
     amount: formatAmount(item.amount),
     description: formatDescription(item.description),
@@ -134,6 +150,8 @@ stdin.on("end", () => {
   }
 
   console.log(JSON.stringify(final, null, 2));
-});
+
+  process.exit(0);
+})();
 
 export {};
