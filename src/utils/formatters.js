@@ -50,17 +50,13 @@ export function formatDate(date) {
   );
 }
 
-export function normalizeText(text) {
-  return (text || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\x00-\x7F]/g, "")
-    .trim();
-}
-
 export function normalizeItem(item) {
   return {
-    text: normalizeText(item.text),
+    text: (item.text || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\x00-\x7F]/g, "")
+      .trim(),
   };
 }
 
