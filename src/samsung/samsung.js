@@ -23,11 +23,11 @@ stdin.setEncoding("utf-8");
 
 let result = "";
 
-stdin.on("data", function (data) {
+stdin.on("data", (data) => {
   result += data.trim();
 });
 
-stdin.on("end", function () {
+stdin.on("end", () => {
   const data = convertInputDataToJson(result)
     .flatMap((item) => item)
     .map(normalizeItem)
@@ -132,6 +132,7 @@ stdin.on("end", function () {
       donePaymentsAmount,
     });
   }
+
   console.log(JSON.stringify(final, null, 2));
 });
 
