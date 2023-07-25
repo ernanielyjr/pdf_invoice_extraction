@@ -38,7 +38,7 @@ stdin.on("end", function () {
         !["DATA", "ESTABELECIMENTO", "VALOR"].includes(item.text)
     )
     .map((item) => item.text)
-    .flatMap((item) => item.split("\r"));
+    .flatMap((item) => item.split(/[\r\n]+/));
 
   const lastInvoiceAmountIndex = data.findIndex((text) =>
     text.startsWith("Total da fatura anterior")
