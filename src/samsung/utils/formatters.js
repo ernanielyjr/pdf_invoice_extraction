@@ -1,3 +1,5 @@
+import { isAmount, isDate, isDescription, isInstalments } from "./validator.js";
+
 export function formatAmount(amount) {
   if (!amount) {
     return;
@@ -67,4 +69,22 @@ export function convertInputDataToJson(data) {
 export function round(num, precision = 2) {
   const base = Math.pow(10, precision);
   return Math.round(num * base) / base;
+}
+
+export function getTextType(text) {
+  if (isAmount(text)) {
+    return "amount";
+  }
+
+  if (isDate(text)) {
+    return "date";
+  }
+
+  if (isInstalments(text)) {
+    return "instalments";
+  }
+
+  if (isDescription(text)) {
+    return "description";
+  }
 }

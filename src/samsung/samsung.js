@@ -4,6 +4,7 @@ import {
   formatDate,
   formatDescription,
   formatInstalments,
+  getTextType,
   normalizeItem,
   round,
 } from "./utils/formatters.js";
@@ -13,9 +14,10 @@ const DEGUB = true;
 
 var stdin = process.openStdin();
 
-const [expectedItemsCount, expectedItemsSum, invoiceDate] = process.argv
-  .slice(2)
-  .map((item, i) => (i < 2 ? parseFloat(item) : item));
+const args = process.argv.slice(2);
+
+const expectedItemsSum = parseFloat(args[0]);
+const invoiceDate = args[1];
 
 stdin.setEncoding("utf-8");
 
@@ -24,40 +26,6 @@ let result = "";
 stdin.on("data", function (data) {
   result += data.trim();
 });
-
-function isAmount(text) {
-  return (text || "").includes("R$ ");
-}
-
-function isDate(text) {
-  return (text || "").includes(", 20");
-}
-
-function isInstalments(text) {
-  return (text || "").includes("parcela ");
-}
-
-function isDescription(text) {
-  return !isAmount(text) && !isDate(text) && !isInstalments(text);
-}
-
-function getTextType(text) {
-  if (isAmount(text)) {
-    return "amount";
-  }
-
-  if (isDate(text)) {
-    return "date";
-  }
-
-  if (isInstalments(text)) {
-    return "instalments";
-  }
-
-  if (isDescription(text)) {
-    return "description";
-  }
-}
 
 stdin.on("end", function () {
   const data = convertInputDataToJson(result)
@@ -128,30 +96,17 @@ stdin.on("end", function () {
     instalments: formatInstalments(item.instalments),
   }));
 
-  const itemsCount = final.length;
   const itemsSum = round(
     final.reduce((sum, item) => sum + (item.amount || 0), 0)
   );
+  const difference = round(itemsSum - expectedItemsSum);
 
-  if (itemsCount !== expectedItemsCount) {
+  if (difference) {
     console.error(
-      `${invoiceDate} - expected ${expectedItemsCount} items, got ${itemsCount}. Difference: ${
-        itemsCount - expectedItemsCount
-      }`
-    );
-  }
-
-  if (itemsSum !== expectedItemsSum) {
-    console.error(
-      `${invoiceDate} - expected ${expectedItemsSum} sum, got ${itemsSum}. Difference: ${
-        itemsSum - expectedItemsSum
-      }}`
+      `${invoiceDate} - expected ${expectedItemsSum} sum, got ${itemsSum}. Difference: ${difference}}`
     );
   }
   console.log(JSON.stringify(final, null, 2));
-
-  // console.log(sliced);
-  // console.log(JSON.stringify(sliced, null, 2));
 });
 
 export {};
