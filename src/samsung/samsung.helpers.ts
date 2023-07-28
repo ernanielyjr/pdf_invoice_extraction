@@ -4,13 +4,8 @@ import fs from "fs";
 import path from "path";
 import { promisify } from "util";
 import { v4 } from "uuid";
-import {
-  FormattedItem,
-  InvoiceOutput,
-  ItemBase,
-  PreFormattedItem,
-  SumStatements,
-} from "./samsung.model";
+import { InvoiceOutput, Statement } from "../model";
+import { ItemBase, RawStatement, SumStatements } from "./samsung.model";
 
 export function textIsCategory(text?: string) {
   return [
@@ -134,6 +129,7 @@ function saveTemporaryFile(): Promise<string> {
   return new Promise((resolve, reject) => {
     process.stdin.setEncoding("binary");
 
+    //TODO: converter para for sem callback
     let content: any;
     process.stdin.on("data", (chunk) => {
       content += chunk;
@@ -151,22 +147,23 @@ function saveTemporaryFile(): Promise<string> {
 }
 
 export function argsParser() {
+  const filename = __filename.replace(process.cwd(), ".");
+
   args
     .option(["i", "input"], "Input PDF file to convert")
     .option(["o", "output"], "Output JSON file to write")
-    .option(["c", "stream"], "Read from stdin")
     .examples([
       {
         description: "Using args",
-        usage: `node ${__filename} -i invoice.pdf -o invoice.json`,
+        usage: `node ${filename} -i invoice.pdf -o invoice.json`,
       },
       {
         description: "Using stream",
-        usage: `cat invoice.pdf | node ${__filename} > invoice.json`,
+        usage: `cat invoice.pdf | node ${filename} > invoice.json`,
       },
       {
         description: "Using both modes",
-        usage: `cat invoice.pdf | node ${__filename} -o invoice.json`,
+        usage: `cat invoice.pdf | node ${filename} -o invoice.json`,
       },
     ]);
 
@@ -294,7 +291,7 @@ export function getHeaderInfo(data: string[]) {
   };
 }
 
-function formatStatements(data: PreFormattedItem[]): FormattedItem[] {
+function formatStatements(data: RawStatement[]): Statement[] {
   return data.map((item) => ({
     date: formatDate(item.date) || new Date(),
     amount: formatAmount(item.amount) || 0,
@@ -303,11 +300,11 @@ function formatStatements(data: PreFormattedItem[]): FormattedItem[] {
   }));
 }
 
-function preFormatStatements(rawStatements: string[]): PreFormattedItem[] {
-  const merged: PreFormattedItem[] = [];
+function preFormatStatements(rawStatements: string[]): RawStatement[] {
+  const merged: RawStatement[] = [];
 
   for (let i = 0; i < rawStatements.length; i++) {
-    const newItem: PreFormattedItem = {};
+    const newItem: RawStatement = {};
 
     const text0 = rawStatements[i + 0];
     const text1 = rawStatements[i + 1];
@@ -351,7 +348,7 @@ function preFormatStatements(rawStatements: string[]): PreFormattedItem[] {
   return merged;
 }
 
-function sumStatements(statements: FormattedItem[]): SumStatements {
+function sumStatements(statements: Statement[]): SumStatements {
   return statements.reduce(
     (accSum, item) => {
       if (item.amount < 0) {
